@@ -10,11 +10,11 @@
 template <typename T>
 void TypedColumn<T>::addValue(const std::string& value) {
 	std::istringstream iss(value);
-	T convertedValue;
-	if (!(iss >> convertedValue)) {
+	T converted_value;
+	if (!(iss >> converted_value)) {
 		throw std::invalid_argument("Invalid data format for column type");
 	}
-	values.push_back(convertedValue);
+	values.push_back(converted_value);
 }
 
 // universal method for adding value from any type
@@ -26,9 +26,9 @@ void TypedColumn<T>::addValueFromAny(const void* value) {
 
 // printing values
 template <typename T>
-void TypedColumn<T>::printValue() const {
-	for (const auto& v : values) {
-		std::cout << v << " ";
+void TypedColumn<T>::printValue(size_t index) const {
+	if (index < values.size()) {
+		std::cout << values[index] << " ";
 	}
 	std::cout << std::endl;
 }
@@ -48,17 +48,17 @@ std::string TypedColumn<T>::getValue(size_t index) const {
 template <typename T>
 TypedColumn<T>::TypedColumn() {
 	if constexpr (std::is_same<T, std::string>::value) {
-		columnType = ColumnType::STRING;
+		column_type = ColumnType::STRING;
 	} else if constexpr (std::is_same<T, int>::value) {
-		columnType = ColumnType::INT;
+		column_type = ColumnType::INT;
 	} else if constexpr (std::is_same<T, double>::value) {
-		columnType = ColumnType::DOUBLE;
+		column_type = ColumnType::DOUBLE;
 	} else if constexpr (std::is_same<T, bool>::value) {
-		columnType = ColumnType::BOOL;
+		column_type = ColumnType::BOOL;
 	} else if constexpr (std::is_same<T, float>::value) {
-		columnType = ColumnType::FLOAT;
+		column_type = ColumnType::FLOAT;
 	} else if constexpr (std::is_same<T, char>::value) {
-		columnType = ColumnType::CHAR;
+		column_type = ColumnType::CHAR;
 	} else {
 		throw std::invalid_argument("Unsupported column type");
 	}
