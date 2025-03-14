@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <type_traits>
 #include <stdexcept>
 
 // adding value from string
@@ -15,6 +16,12 @@ void TypedColumn<T>::addValue(const std::string& value) {
 		throw std::invalid_argument("Invalid data format for column type");
 	}
 	values.push_back(converted_value);
+}
+
+// getting size of column
+template <typename T>
+size_t TypedColumn<T>::getSize() const {
+	return values.size();
 }
 
 // universal method for adding value from any type
@@ -30,7 +37,6 @@ void TypedColumn<T>::printValue(size_t index) const {
 	if (index < values.size()) {
 		std::cout << values[index] << " ";
 	}
-	std::cout << std::endl;
 }
 
 // getting value in string format
@@ -44,25 +50,24 @@ std::string TypedColumn<T>::getValue(size_t index) const {
 	throw std::out_of_range("Index out of range");
 }
 
-// constructor TypedColumn
 template <typename T>
-TypedColumn<T>::TypedColumn() {
-	if constexpr (std::is_same<T, std::string>::value) {
-		column_type = ColumnType::STRING;
-	} else if constexpr (std::is_same<T, int>::value) {
-		column_type = ColumnType::INT;
-	} else if constexpr (std::is_same<T, double>::value) {
-		column_type = ColumnType::DOUBLE;
-	} else if constexpr (std::is_same<T, bool>::value) {
-		column_type = ColumnType::BOOL;
-	} else if constexpr (std::is_same<T, float>::value) {
-		column_type = ColumnType::FLOAT;
-	} else if constexpr (std::is_same<T, char>::value) {
-		column_type = ColumnType::CHAR;
-	} else {
-		throw std::invalid_argument("Unsupported column type");
-	}
-}
+TypedColumn<T>::TypedColumn(const std::string& name)
+    : Column(name, [] {
+          if constexpr (std::is_same_v<T, std::string>)
+              return ColumnType::STRING;
+          else if constexpr (std::is_same_v<T, int>)
+              return ColumnType::INT;
+          else if constexpr (std::is_same_v<T, double>)
+              return ColumnType::DOUBLE;
+          else if constexpr (std::is_same_v<T, bool>)
+              return ColumnType::BOOL;
+          else if constexpr (std::is_same_v<T, float>)
+              return ColumnType::FLOAT;
+          else if constexpr (std::is_same_v<T, char>)
+              return ColumnType::CHAR;
+          else
+              throw std::invalid_argument("Unsupported column type");
+      }()) {}
 
 // saving data to file(Column)
 template <typename T>

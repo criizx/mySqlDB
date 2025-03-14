@@ -1,23 +1,34 @@
+#include <memory>
+
 #include "column.hpp"
 #include "table.hpp"
 #include "tools.hpp"
 
-Table::Table(const std::string& name) : name(name) {}
+Table::Table(const std::string& name) : name(name), next_id(1) { columns.push_back(new TypedColumn<int>("id")); }
+
+Table::~Table() {
+	for (auto col : columns) {
+		delete col;
+	}
+}
 
 void Table::addColumn(Column* column) { columns.push_back(column); }
 
 void Table::addRow(const std::vector<void*>& row) {
-	if (row.size() != columns.size()) {
-		throw std::invalid_argument("Row size does not match column count");
+	if (row.size() != columns.size() - 1) {
+		throw std::invalid_argument("Row size does not match column count (excluding id)");
 	}
 
+	int id = next_id++;
+	columns[0]->addValueFromAny(&id);
+
 	for (size_t i = 0; i < row.size(); ++i) {
-		switch (columns[i]->getColumnType()) {
+		switch (columns[i + 1]->getColumnType()) {
 			case ColumnType::STRING:
-				columns[i]->addValue(*static_cast<const std::string*>(row[i]));
+				columns[i + 1]->addValue(*static_cast<const std::string*>(row[i]));
 				break;
 			default:
-				columns[i]->addValueFromAny(row[i]);
+				columns[i + 1]->addValueFromAny(row[i]);
 				break;
 		}
 	}
@@ -43,8 +54,10 @@ void Table::printTable() const {
 		column_names.push_back(columns[i]->getName());
 	}
 	std::cout << joinStrings(column_names) << std::endl;
-	for (size_t i = 0; i < columns.size(); ++i) {
-		columns[i]->printValue(i);
+	for (size_t j = 0; j < columns[0]->getSize(); ++j) {
+		for (size_t i = 0; i < columns.size(); ++i) {
+			columns[i]->printValue(j);
+		}
 		std::cout << std::endl;
 	}
 }

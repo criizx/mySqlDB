@@ -10,38 +10,38 @@
 enum class ColumnType { STRING, INT, DOUBLE, FLOAT, BOOL, CHAR };
 
 class Column {
-   private:
-	std::string name;
-
    protected:
+	std::string name;
 	ColumnType column_type;
 
    public:
-	Column(ColumnType type) : column_type(type) {}
+	Column(const std::string& name, ColumnType type) : name(name), column_type(type) {}
 	virtual ~Column() = default;
 
 	virtual void printValue(size_t index) const = 0;
 	virtual void addValue(const std::string&) = 0;
 	virtual void addValueFromAny(const void* value) = 0;
 	virtual std::string getValue(size_t index) const = 0;
+	virtual size_t getSize() const = 0;
 	virtual void flushToDisk(const std::string& filename) const = 0;
 	virtual void loadFromFile(const std::string& filename) = 0;
+
 	std::string getName() const { return name; }
 	ColumnType getColumnType() const { return column_type; }
 };
 
-// template class TypedColumn
 template <typename T>
 class TypedColumn : public Column {
    private:
 	std::vector<T> values;
 
    public:
-	TypedColumn();
+	TypedColumn(const std::string& name);
 
 	void addValue(const std::string& value) override;
 	void addValueFromAny(const void* value) override;
 	void printValue(size_t index) const override;
+	size_t getSize() const override;
 	std::string getValue(size_t index) const override;
 	void flushToDisk(const std::string& filename) const override;
 	void loadFromFile(const std::string& filename) override;

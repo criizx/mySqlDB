@@ -9,6 +9,7 @@
 class Table {
    public:
 	Table(const std::string& name);
+	~Table();
 
 	void addColumn(Column* column);
 	void addRow(const std::vector<void*>& row);
@@ -23,6 +24,7 @@ class Table {
    private:
 	std::string name;
 	std::vector<Column*> columns;
+	int next_id;
 };
 
 #endif
