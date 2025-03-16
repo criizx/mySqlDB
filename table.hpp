@@ -1,6 +1,7 @@
 #ifndef TABLE_HPP
 #define TABLE_HPP
 
+#include <ctime>
 #include <string>
 #include <vector>
 
@@ -13,12 +14,16 @@ class Table {
 
 	void addColumn(Column* column);
 	void addRow(const std::vector<void*>& row);
-	void flushToDisk() const;
+
+	void saveTable(std::string filename) const;
 	void loadFromFile(std::string filename = "");
 	void printTable() const;
+	void flushTable() const;
+	void backupTable() const;
 
 	auto getValue(const std::string& columnName, int row) const;
 	auto getValue(const int column, int row) const;
+	auto getColumnsSize() const;
 	int getColumnIndex(const std::string& columnName) const;
 
    private:

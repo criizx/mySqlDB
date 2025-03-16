@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -48,9 +49,9 @@ void Table::addRow(const std::vector<void*>& row) {
 	}
 }
 
-void Table::flushToDisk() const {
+void Table::saveTable(std::string filename) const {
 	// Opening file for writing in binary mode
-	std::ofstream file(name + ".tbl", std::ios::binary);
+	std::ofstream file(filename, std::ios::binary);
 	if (!file.is_open()) {
 		perror("Cannot open file for writing");
 		return;
@@ -145,6 +146,7 @@ void Table::loadFromFile(std::string filename) {
 
 	file.close();
 }
+
 void Table::printTable() const {
 	std::vector<std::string> column_names;
 	for (size_t i = 0; i < columns.size(); ++i) {
@@ -172,3 +174,14 @@ auto Table::getValue(const std::string& columnName, int row) const {
 	return columns[getColumnIndex(columnName)]->getValue(row);
 }
 auto Table::getValue(const int column, int row) const { return columns[column]->getValue(row); }
+
+auto Table::getColumnsSize() const { return columns.size(); };
+
+void Table::flushTable() const { saveTable(name + ".tbl"); }
+
+void Table::backupTable() const {
+	std::string time = getCurrentTimeAsString();
+	std::string backup_filename = name + "_backup_" + time + ".tbl";
+
+	saveTable(backup_filename);
+}

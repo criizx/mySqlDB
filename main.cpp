@@ -1,55 +1,73 @@
-#include <filesystem>  // C++17 filesystem API
+#include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "column.hpp"
 #include "table.hpp"
 #include "tools.hpp"
 
-using namespace std;
-
 int main() {
-	// Create initial table with name "TestTable"
-	Table testTable("TestTable");
+	try {
+		// Создаем таблицу с именем "test"
+		Table table("test");
 
-	// Add additional columns to the table
-	// (ID column is automatically added in the constructor)
-	// Create a string column "name"
-	testTable.addColumn(new TypedColumn<std::string>("name"));
-	// Create an int column "age"
-	testTable.addColumn(new TypedColumn<int>("age"));
+		// Добавляем колонки разных типов
+		table.addColumn(new TypedColumn<std::string>("Name"));
+		table.addColumn(new TypedColumn<int>("Age"));
+		table.addColumn(new TypedColumn<double>("Score"));
+		table.addColumn(new TypedColumn<bool>("Active"));
 
-	// Prepare data for rows (excluding ID column)
-	// Each row should have (number of columns - 1) values.
-	// Here we have 2 values per row: name and age.
-	{
-		// Row 1: name = "Alice", age = 30
+		// Создаем тестовые данные
 		std::string name1 = "Alice";
-		int age1 = 30;
-		vector<void*> row1 = {&name1, &age1};
-		testTable.addRow(row1);
-	}
-	{
-		// Row 2: name = "Bob", age = 25
+		int age1 = 25;
+		double score1 = 85.5;
+		bool active1 = true;
+
 		std::string name2 = "Bob";
-		int age2 = 25;
-		vector<void*> row2 = {&name2, &age2};
-		testTable.addRow(row2);
+		int age2 = 30;
+		double score2 = 92.3;
+		bool active2 = false;
+
+		// Формируем строки для добавления
+		std::vector<void*> row1 = {&name1, &age1, &score1, &active1};
+		std::vector<void*> row2 = {&name2, &age2, &score2, &active2};
+
+		// Добавляем строки в таблицу
+		table.addRow(row1);
+		table.addRow(row2);
+
+		// Выводим таблицу
+		std::cout << "Original table:" << std::endl;
+		table.printTable();
+
+		// Сохраняем и создаем бэкап
+		table.flushTable();
+		table.backupTable();
+		std::cout << "\nTable saved and backup created" << std::endl;
+
+		// Создаем новую таблицу для теста загрузки
+		Table loadedTable("test_loaded");
+		loadedTable.addColumn(new TypedColumn<std::string>("Name"));
+		loadedTable.addColumn(new TypedColumn<int>("Age"));
+		loadedTable.addColumn(new TypedColumn<double>("Score"));
+		loadedTable.addColumn(new TypedColumn<bool>("Active"));
+
+		// Загружаем данные из файла
+		loadedTable.loadFromFile("test.tbl");
+
+		// Выводим загруженную таблицу
+		std::cout << "\nLoaded table:" << std::endl;
+		loadedTable.printTable();
+
+		// Проверяем получение значений
+		std::cout << "\nTesting getValue:" << std::endl;
+
+	} catch (const std::exception& e) {
+		std::cerr << "Error: " << e.what() << std::endl;
+		return EXIT_FAILURE;
 	}
 
-	cout << "Original Table:" << endl;
-	testTable.printTable();
-
-	testTable.flushToDisk();
-	cout << "Table flushed to disk as 'TestTable.tbl'" << endl;
-
-	Table loadedTable("LoadedTable");
-	loadedTable.addColumn(new TypedColumn<std::string>("name"));
-	loadedTable.addColumn(new TypedColumn<int>("age"));
-	loadedTable.loadFromFile("TestTable.tbl");
-	cout << "Loaded Table from file:" << endl;
-	loadedTable.printTable();
-
-	return 0;
+	return EXIT_SUCCESS;
 }
