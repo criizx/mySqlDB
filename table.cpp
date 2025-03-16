@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <ostream>
+#include <string>
 #include <typeinfo>
 
 #include "column.hpp"
@@ -48,21 +49,19 @@ void Table::addRow(const std::vector<void*>& row) {
 }
 
 void Table::flushToDisk() const {
-	// opening file in binary format
+	// Opening file for writing in binary mode
 	std::ofstream file(name + ".tbl", std::ios::binary);
 	if (!file.is_open()) {
-		perror("Cannot open file\n");
+		perror("Cannot open file for writing");
 		return;
 	}
 
-	// (1) writing header of file
-
-	// writing column amount
+	// 1. Writing amount of columns
 	int columns_amount = static_cast<int>(columns.size());
 	file.write(reinterpret_cast<const char*>(&columns_amount), sizeof(columns_amount));
 
-	// writing name + type for every column
-	for (size_t i = 0; i < static_cast<size_t>(columns_amount); ++i) {
+	// 2. Writing metadata for each column: length of name, name, column type
+	for (size_t i = 0; i < columns.size(); ++i) {
 		std::string colName = columns[i]->getName();
 		int name_length = static_cast<int>(colName.size());
 		file.write(reinterpret_cast<const char*>(&name_length), sizeof(name_length));
@@ -72,15 +71,19 @@ void Table::flushToDisk() const {
 		file.write(reinterpret_cast<const char*>(&colType), sizeof(colType));
 	}
 
-	// (2) writing data for every column
+	// 3. Writing amount of rows (assuming all columns have the same size)
 	int rows = 0;
 	if (!columns.empty()) {
 		rows = static_cast<int>(columns[0]->getSize());
 	}
 	file.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
 
+	// 4. Writing data row by row:
+	// For each row, for each column, write:
+	// - length of string representation of value (int)
+	// - value itself (without terminating character)
 	for (int r = 0; r < rows; ++r) {
-		for (int c = 0; c < columns_amount; ++c) {
+		for (size_t c = 0; c < columns.size(); ++c) {
 			std::string value = columns[c]->getValue(r);
 			int value_length = static_cast<int>(value.size());
 			file.write(reinterpret_cast<const char*>(&value_length), sizeof(value_length));
@@ -91,39 +94,57 @@ void Table::flushToDisk() const {
 	file.close();
 }
 
-void Table::loadFromFile() {
-	// opening file
-	std::string filename = name + ".tbl";
+void Table::loadFromFile(std::string filename) {
+	if (filename.empty()) {
+		filename = this->name + ".tbl";
+	}
 	std::ifstream file(filename, std::ios::binary);
 	if (!file.is_open()) {
-		perror("Cannot open file");
+		perror("Cannot open file for reading");
 		return;
 	}
 
-	// reading columns amount
-	int columns_amout;
-	file.read(reinterpret_cast<char*>(&columns_amout), sizeof(columns_amout));
-	for (int c = 0; c < columns_amout; ++c) {
-		// skiping columns names
+	// 1. Read the number of columns
+	int columns_amount;
+	file.read(reinterpret_cast<char*>(&columns_amount), sizeof(columns_amount));
+
+	// 2. Skip metadata for each column:
+	// For each column:
+	//   - Read the length of the name, then skip the name
+	//   - Read the column type (as int)
+	for (int c = 0; c < columns_amount; ++c) {
 		int name_length;
 		file.read(reinterpret_cast<char*>(&name_length), sizeof(name_length));
-		file.seekg(name_length, std::ios::cur);
-		// skiping columns types
-		int type_length;
-		file.read(reinterpret_cast<char*>(&type_length), sizeof(type_length));
-		file.seekg(type_length, std::ios::cur);
+		file.seekg(name_length, std::ios::cur);  // skip the name
+
+		int colType;
+		file.read(reinterpret_cast<char*>(&colType), sizeof(colType));  // read the type
 	}
+
+	// 3. Read the number of rows
 	int rows_count;
 	file.read(reinterpret_cast<char*>(&rows_count), sizeof(rows_count));
 
+	// 4. Read data row by row:
+	// For each row and for each column:
+	//   - Read the length of the value
+	//   - Read the value (bytes) into a string
+	//   - Add the value to the corresponding column using addValue()
 	for (int r = 0; r < rows_count; ++r) {
-		for (int c = 0; c < columns_amout; ++c) {
-			columns[c]->readValue(file);
+		for (size_t c = 0; c < columns.size(); ++c) {
+			int value_length;
+			file.read(reinterpret_cast<char*>(&value_length), sizeof(value_length));
+
+			std::string cell;
+			cell.resize(value_length);
+			file.read(&cell[0], value_length);
+
+			columns[c]->addValue(cell);
 		}
 	}
+
 	file.close();
 }
-
 void Table::printTable() const {
 	std::vector<std::string> column_names;
 	for (size_t i = 0; i < columns.size(); ++i) {

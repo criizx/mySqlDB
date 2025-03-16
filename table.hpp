@@ -14,7 +14,7 @@ class Table {
 	void addColumn(Column* column);
 	void addRow(const std::vector<void*>& row);
 	void flushToDisk() const;
-	void loadFromFile();
+	void loadFromFile(std::string filename = "");
 	void printTable() const;
 
 	auto getValue(const std::string& columnName, int row) const;
