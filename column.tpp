@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <stdexcept>
 
+
 // adding value from string
 template <typename T>
 void TypedColumn<T>::addValue(const std::string& value) {
@@ -95,6 +96,14 @@ void TypedColumn<T>::loadFromFile(const std::string& filename) {
 		values.push_back(value);
 	}
 	file.close();
+}
+
+// reading data from file(Column)
+template <typename T>
+void TypedColumn<T>::readValue(std::istream& file) {
+	T value;
+	file.read(reinterpret_cast<char*>(&value), sizeof(value));
+	values.push_back(value);
 }
 
 #endif  // COLUMN_TPP

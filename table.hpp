@@ -13,8 +13,8 @@ class Table {
 
 	void addColumn(Column* column);
 	void addRow(const std::vector<void*>& row);
-	void flushToDisk(const std::string& filename) const;
-	void loadFromFile(const std::string& filename);
+	void flushToDisk() const;
+	void loadFromFile();
 	void printTable() const;
 
 	auto getValue(const std::string& columnName, int row) const;

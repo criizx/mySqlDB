@@ -25,6 +25,7 @@ class Column {
 	virtual size_t getSize() const = 0;
 	virtual void flushToDisk(const std::string& filename) const = 0;
 	virtual void loadFromFile(const std::string& filename) = 0;
+	virtual void readValue(std::istream& file) = 0;
 
 	std::string getName() const { return name; }
 	ColumnType getColumnType() const { return column_type; }
@@ -38,6 +39,7 @@ class TypedColumn : public Column {
    public:
 	TypedColumn(const std::string& name);
 
+	void readValue(std::istream& file) override;
 	void addValue(const std::string& value) override;
 	void addValueFromAny(const void* value) override;
 	void printValue(size_t index) const override;

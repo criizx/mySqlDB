@@ -1,10 +1,23 @@
+#include <cstdio>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <memory>
+#include <ostream>
+#include <typeinfo>
 
 #include "column.hpp"
 #include "table.hpp"
 #include "tools.hpp"
 
-Table::Table(const std::string& name) : name(name), next_id(1) { columns.push_back(new TypedColumn<int>("id")); }
+Table::Table(const std::string& name) : name(name), next_id(1) {
+	columns.push_back(new TypedColumn<int>("id"));
+	std::ofstream outfile(name + ".tbl");
+	if (!outfile.is_open()) {
+		throw std::runtime_error("Ошибка: не удалось создать файл " + name);
+	}
+	outfile.close();
+}
 
 Table::~Table() {
 	for (auto col : columns) {
@@ -34,18 +47,81 @@ void Table::addRow(const std::vector<void*>& row) {
 	}
 }
 
-void Table::flushToDisk(const std::string& filename) const {
-	for (size_t i = 0; i < columns.size(); ++i) {
-		std::string col_filename = filename + "_col" + std::to_string(i) + ".txt";
-		columns[i]->flushToDisk(col_filename);
+void Table::flushToDisk() const {
+	// opening file in binary format
+	std::ofstream file(name + ".tbl", std::ios::binary);
+	if (!file.is_open()) {
+		perror("Cannot open file\n");
+		return;
 	}
+
+	// (1) writing header of file
+
+	// writing column amount
+	int columns_amount = static_cast<int>(columns.size());
+	file.write(reinterpret_cast<const char*>(&columns_amount), sizeof(columns_amount));
+
+	// writing name + type for every column
+	for (size_t i = 0; i < static_cast<size_t>(columns_amount); ++i) {
+		std::string colName = columns[i]->getName();
+		int name_length = static_cast<int>(colName.size());
+		file.write(reinterpret_cast<const char*>(&name_length), sizeof(name_length));
+		file.write(colName.c_str(), name_length);
+
+		int colType = static_cast<int>(columns[i]->getColumnType());
+		file.write(reinterpret_cast<const char*>(&colType), sizeof(colType));
+	}
+
+	// (2) writing data for every column
+	int rows = 0;
+	if (!columns.empty()) {
+		rows = static_cast<int>(columns[0]->getSize());
+	}
+	file.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
+
+	for (int r = 0; r < rows; ++r) {
+		for (int c = 0; c < columns_amount; ++c) {
+			std::string value = columns[c]->getValue(r);
+			int value_length = static_cast<int>(value.size());
+			file.write(reinterpret_cast<const char*>(&value_length), sizeof(value_length));
+			file.write(value.c_str(), value_length);
+		}
+	}
+
+	file.close();
 }
 
-void Table::loadFromFile(const std::string& filename) {
-	for (size_t i = 0; i < columns.size(); ++i) {
-		std::string col_filename = filename + "_col" + std::to_string(i) + ".txt";
-		columns[i]->loadFromFile(col_filename);
+void Table::loadFromFile() {
+	// opening file
+	std::string filename = name + ".tbl";
+	std::ifstream file(filename, std::ios::binary);
+	if (!file.is_open()) {
+		perror("Cannot open file");
+		return;
 	}
+
+	// reading columns amount
+	int columns_amout;
+	file.read(reinterpret_cast<char*>(&columns_amout), sizeof(columns_amout));
+	for (int c = 0; c < columns_amout; ++c) {
+		// skiping columns names
+		int name_length;
+		file.read(reinterpret_cast<char*>(&name_length), sizeof(name_length));
+		file.seekg(name_length, std::ios::cur);
+		// skiping columns types
+		int type_length;
+		file.read(reinterpret_cast<char*>(&type_length), sizeof(type_length));
+		file.seekg(type_length, std::ios::cur);
+	}
+	int rows_count;
+	file.read(reinterpret_cast<char*>(&rows_count), sizeof(rows_count));
+
+	for (int r = 0; r < rows_count; ++r) {
+		for (int c = 0; c < columns_amout; ++c) {
+			columns[c]->readValue(file);
+		}
+	}
+	file.close();
 }
 
 void Table::printTable() const {
