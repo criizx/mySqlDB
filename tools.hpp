@@ -10,3 +10,5 @@
 
 std::string joinStrings(const std::vector<std::string>& strings);
 std::string getCurrentTimeAsString();
+
+bool checkIsDigit(const std::string std);

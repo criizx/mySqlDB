@@ -36,3 +36,14 @@ std::string getCurrentTimeAsString() {
 
 	return oss.str();
 }
+
+// My realisation of IsDigit
+bool checkIsDigit(const std::string str) {
+	for (int i = 0; i < str.size(); i++) {
+		if (str[i] < 48 || str[i] > 57) {
+			return false;
+		}
+	}
+
+	return true;
+}
