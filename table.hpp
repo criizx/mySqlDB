@@ -1,8 +1,15 @@
 #ifndef TABLE_HPP
 #define TABLE_HPP
 
+#include <cstdio>
 #include <ctime>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <ostream>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 #include "column.hpp"
